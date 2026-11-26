@@ -26,6 +26,7 @@ all_tags_for_estimator`` function with the argument ``"transformer"``.
     DownsampleTransformer
     DWTTransformer
     HOG1DTransformer
+    InterpolationImputer
     MinMaxScaler
     Normalizer
     PeriodogramTransformer
