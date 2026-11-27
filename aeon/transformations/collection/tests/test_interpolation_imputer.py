@@ -73,13 +73,14 @@ def test_unequal_length_list(strategy):
 def test_linear_values():
     """Linear interpolation inside the series and at both ends."""
     X = np.array([[[np.nan, 2.0, np.nan, 6.0, 7.0, np.nan, np.nan]]])
+    # By default, the boundary values are repeated.
     np.testing.assert_allclose(
         InterpolationImputer().fit_transform(X)[0, 0],
-        [0.0, 2.0, 4.0, 6.0, 7.0, 8.0, 9.0],
+        [2.0, 2.0, 4.0, 6.0, 7.0, 7.0, 7.0],
     )
     np.testing.assert_allclose(
-        InterpolationImputer(extrapolate=False).fit_transform(X)[0, 0],
-        [2.0, 2.0, 4.0, 6.0, 7.0, 7.0, 7.0],
+        InterpolationImputer(extrapolate=True).fit_transform(X)[0, 0],
+        [0.0, 2.0, 4.0, 6.0, 7.0, 8.0, 9.0],
     )
 
 
@@ -89,7 +90,8 @@ def test_spline_values():
     X = (t**2 - 3 * t + 1).reshape(1, 1, -1)
     X_missing = X.copy()
     X_missing[0, 0, [0, 4, 5, 9]] = np.nan
-    Xt = InterpolationImputer(strategy="quadratic").fit_transform(X_missing)
+    imputer = InterpolationImputer(strategy="quadratic", extrapolate=True)
+    Xt = imputer.fit_transform(X_missing)
     np.testing.assert_allclose(Xt, X)
 
 
@@ -106,16 +108,19 @@ def test_step_values():
         np.testing.assert_allclose(Xt[0, 0], values)
 
 
-@pytest.mark.parametrize("strategy", ["quadratic", "cubic", 4])
+@pytest.mark.parametrize("strategy", ["linear", "quadratic", "cubic", 4])
 def test_no_extrapolation_holds_boundary_values(strategy):
-    """With extrapolate=False, the values outside the observed range are held."""
+    """By default, the values outside the observed range are held."""
     rng = np.random.RandomState(0)
     X = rng.randn(1, 1, 30)
     X[0, 0, :5] = np.nan
     X[0, 0, -7:] = np.nan
-    Xt = InterpolationImputer(strategy=strategy, extrapolate=False).fit_transform(X)
+    Xt = InterpolationImputer(strategy=strategy).fit_transform(X)
     np.testing.assert_array_equal(Xt[0, 0, :5], X[0, 0, 5])
     np.testing.assert_array_equal(Xt[0, 0, -7:], X[0, 0, -8])
+    # With extrapolate=True, they are not.
+    Xt = InterpolationImputer(strategy=strategy, extrapolate=True).fit_transform(X)
+    assert not np.array_equal(Xt[0, 0, :5], np.full(5, X[0, 0, 5]))
 
 
 def test_no_missing_values_is_identity():

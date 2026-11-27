@@ -180,12 +180,12 @@ class InterpolationImputer(BaseCollectionTransformer):
             - "next": next observed value (backward fill).
             - "nearest": closest observed value in time.
             - if int, the order of the spline interpolation.
-    extrapolate : bool, default=True
+    extrapolate : bool, default=False
         How the missing values before the first observed value and after the
-        last one are imputed with a spline strategy. If True, the spline is
-        extrapolated. If False, the first (or last) observed value is
-        repeated. Extrapolating a long gap at the start or the end of a series
-        can produce values far outside its range, in particular with
+        last one are imputed with a spline strategy. If False, the first (or
+        last) observed value is repeated. If True, the spline is extrapolated,
+        which can produce values far outside the range of the series for a
+        long gap at the start or the end, in particular for noisy series or
         high-order splines. The "previous", "next" and "nearest" strategies
         always repeat the boundary value.
 
@@ -200,7 +200,8 @@ class InterpolationImputer(BaseCollectionTransformer):
     ``ValueError`` is raised if a channel has fewer observed values. Observed
     values are left unchanged.
 
-    This is a port of ``InterpolationImputer`` from the pyts package [1]_.
+    This is a port of ``InterpolationImputer`` from the pyts package [1]_,
+    which always extrapolates (``extrapolate=True`` here).
 
     References
     ----------
@@ -215,11 +216,11 @@ class InterpolationImputer(BaseCollectionTransformer):
     >>> InterpolationImputer().fit_transform(X)
     array([[[1., 2., 3., 4.]],
     <BLANKLINE>
-           [[8., 6., 4., 2.]]])
-    >>> InterpolationImputer(extrapolate=False).fit_transform(X)
+           [[8., 6., 4., 4.]]])
+    >>> InterpolationImputer(extrapolate=True).fit_transform(X)
     array([[[1., 2., 3., 4.]],
     <BLANKLINE>
-           [[8., 6., 4., 4.]]])
+           [[8., 6., 4., 2.]]])
     """
 
     _tags = {
@@ -231,7 +232,7 @@ class InterpolationImputer(BaseCollectionTransformer):
         "removes_missing_values": True,
     }
 
-    def __init__(self, strategy: str | int = "linear", extrapolate: bool = True):
+    def __init__(self, strategy: str | int = "linear", extrapolate: bool = False):
         self.strategy = strategy
         self.extrapolate = extrapolate
         super().__init__()
@@ -331,7 +332,7 @@ class InterpolationImputer(BaseCollectionTransformer):
         """
         return [
             {"strategy": "linear"},
-            {"strategy": "cubic", "extrapolate": False},
+            {"strategy": "cubic", "extrapolate": True},
             {"strategy": "previous"},
         ]
 
